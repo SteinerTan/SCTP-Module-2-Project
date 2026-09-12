@@ -1,0 +1,5 @@
+/venv
+/.meltano
+.env
+gcpproject.key.json
+/data
