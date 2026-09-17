@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: category_performance_monthly
+    description: >
+      One row per category per month. This is the input table for the ABC
+      revenue-tiering and decision-matrix analysis (Member 4). Categories
+      with fewer than 30 total delivered orders across the whole window
+      should be treated as low-confidence in that analysis, not filtered out
+      here — filtering belongs in the analysis step, not baked into this
+      table.
+
+      Does NOT carry a review-score column. The project scope was narrowed
+      to 6 core files (no order_reviews), so the "Quality signal" leg of the
+      Refined Problem Statement's decision matrix has no data source here —
+      flagged for the team to resolve before Member 4 applies Tier C logic.
+    columns:
+      - name: category_name_english
+        tests:
+          - not_null
+      - name: order_month
+        tests:
+          - not_null
+      - name: revenue
+        description: "Sum of price for delivered order items in this category and month."
+      - name: order_count
+        description: "Distinct delivered orders touching this category in this month."
+      - name: avg_freight_price_ratio
+        description: "Average freight_value / price. Used as a proxy for logistics drag since Olist has no cost-of-goods data."

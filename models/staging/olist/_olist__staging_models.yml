@@ -1,0 +1,58 @@
+version: 2
+
+models:
+  - name: stg_olist__customers
+    description: "One row per customer_id (a single real person can have multiple customer_ids across orders — see customer_unique_id)."
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_olist__orders
+    description: "One row per order, order_status kept unfiltered on purpose."
+    columns:
+      - name: order_id
+        tests:
+          - unique
+          - not_null
+      - name: order_status
+        tests:
+          - accepted_values:
+              values: ['delivered', 'shipped', 'canceled', 'unavailable', 'invoiced', 'processing', 'created', 'approved']
+
+  - name: stg_olist__order_items
+    description: "One row per order line item."
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+      - name: product_id
+        tests:
+          - not_null
+
+  - name: stg_olist__products
+    description: "One row per product. Category name is still in Portuguese at this layer; trimmed, with blank strings converted to NULL."
+    columns:
+      - name: product_id
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_olist__category_translation
+    description: "Portuguese-to-English lookup for product categories."
+    columns:
+      - name: product_category_name
+        tests:
+          - unique
+
+  - name: stg_olist__order_payments
+    description: "One row per order_id + payment_sequential. Some orders have more than one payment row (split payments) — collapsed to one row per order in int_order_payments_agg."
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+      - name: payment_type
+        tests:
+          - accepted_values:
+              values: ['credit_card', 'boleto', 'voucher', 'debit_card', 'not_defined']

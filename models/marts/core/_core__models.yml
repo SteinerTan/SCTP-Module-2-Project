@@ -1,0 +1,78 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: "One row per customer_id, enriched with lifetime order count and lifetime revenue (delivered orders only, price only)."
+    columns:
+      - name: customer_id
+        description: "Primary key."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_products
+    description: "One row per product_id. Category is cleaned and translated to English; category_translation_status flags how that translation was resolved. Physical dimensions are never imputed — has_complete_dimensions flags rows missing any of the four measurements."
+    columns:
+      - name: product_id
+        description: "Primary key."
+        tests:
+          - unique
+          - not_null
+      - name: category_name_raw
+        description: "Original Portuguese category name, trimmed. NULL when the product has no category on record."
+      - name: category_name_english
+        description: "English category name. Falls back to a title-cased version of the raw Portuguese name when no translation row exists (kept distinguishable from other untranslated categories rather than collapsed into a flat 'unmapped' label), and to 'Uncategorized' when the product has no category on record at all."
+        tests:
+          - not_null
+      - name: category_translation_status
+        description: "QA flag for how category_name_english was resolved: 'translated', 'missing_translation', or 'no_category_on_record'."
+        tests:
+          - accepted_values:
+              values: ['translated', 'missing_translation', 'no_category_on_record']
+      - name: has_complete_dimensions
+        description: "FALSE when any of product_weight_g / product_length_cm / product_height_cm / product_width_cm is NULL. Dimensions are never imputed or defaulted."
+      - name: order_count
+        description: "Number of distinct delivered orders that included this product. Same delivered-orders-only convention as dim_customers.lifetime_order_count and category_performance_monthly.order_count — a per-product volume signal for the inventory/procurement question, separate from revenue."
+
+  - name: fct_orders
+    description: "One row per order. order_revenue/order_freight/order_total_paid are rolled up from order items. order_payment_total is the equivalent rollup from order_payments, kept alongside it as a sanity check (the two should be close for delivered orders). order_status is NOT pre-filtered."
+    columns:
+      - name: order_id
+        description: "Primary key."
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: order_status
+        tests:
+          - accepted_values:
+              values: ['delivered', 'shipped', 'canceled', 'unavailable', 'invoiced', 'processing', 'created', 'approved']
+      - name: order_payment_total
+        description: "Sum of payment_value across all payment rows for this order (order_payments can have more than one row per order for split payments)."
+      - name: payment_method_count
+        description: "Number of separate payment rows (methods/installment groups) used on this order."
+      - name: max_installments
+        description: "Largest payment_installments value across this order's payment rows."
+      - name: primary_payment_type
+        description: "The payment_type carrying the largest payment_value on this order. 'credit_card', 'boleto', 'voucher', 'debit_card', or 'not_defined'."
+
+  - name: fct_order_items
+    description: "One row per order line item. Grain = order_id + order_item_id. Revenue = price; freight_value tracked separately."
+    columns:
+      - name: order_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fct_orders')
+              field: order_id
+      - name: product_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_products')
+              field: product_id
