@@ -1,0 +1,25 @@
+version: 2
+
+sources:
+  - name: olist_raw
+    database: "ds6-module-2-olist-analytics"
+    schema: "ingestion"
+    tables:
+      # `identifier:` maps the logical name the .sql models call via
+      # source('olist_raw', ...) to the actual table Member 1 created in
+      # BigQuery, which uses simplified names, not the Kaggle filenames.
+      - name: olist_customers_dataset
+        identifier: customers
+      - name: olist_orders_dataset
+        identifier: orders
+      - name: olist_order_items_dataset
+        identifier: order_items
+      - name: olist_products_dataset
+        identifier: products
+      - name: olist_order_payments_dataset
+        identifier: order_payments
+      - name: product_category_name_translation
+        # NOT YET LOADED as of 2026-09-04 — see dbt_project/README.md.
+        # stg_olist__category_translation (and everything downstream that
+        # needs category_name_english, incl. dim_products) will fail until
+        # this table exists in the `ingestion` dataset.
