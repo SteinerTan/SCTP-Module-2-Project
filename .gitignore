@@ -1,1 +1,4 @@
 *:Zone.Identifier
+target/
+dbt_packages/
+logs/
