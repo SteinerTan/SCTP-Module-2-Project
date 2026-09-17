@@ -1,0 +1,58 @@
+default_environment: dev
+project_id: 01a04c90-4aba-7abf-9ba6-fbca9afee430
+environments:
+- name: dev
+- name: staging
+- name: prod
+python: python3.11
+
+plugins:
+  extractors:
+  - name: tap-csv
+    variant: meltanolabs
+    pip_url: git+https://github.com/MeltanoLabs/tap-csv.git
+    config:
+      files:
+      - entity: product_category_name_translation
+        path: data/product_category_name_translation.csv
+        keys: [product_category_name]
+
+      - entity: customers
+        path: data/olist_customers_dataset.csv
+        keys: [customer_id]
+
+      - entity: orders
+        path: data/olist_orders_dataset.csv
+        keys: [order_id]
+
+      - entity: order_items
+        path: data/olist_order_items_dataset.csv
+        keys: [order_id, order_item_id]
+
+      - entity: order_payments
+        path: data/olist_order_payments_dataset.csv
+        keys: [order_id, payment_sequential]
+
+      - entity: order_reviews
+        path: data/olist_order_reviews_dataset.csv
+        keys: [review_id]
+
+      - entity: products
+        path: data/olist_products_dataset.csv
+        keys: [product_id]
+
+  - name: tap-github
+    variant: meltanolabs
+    pip_url: meltanolabs-tap-github
+  loaders:
+  - name: target-bigquery
+    variant: z3z1ma
+    pip_url: git+https://github.com/z3z1ma/target-bigquery.git
+    config:
+      credentials_path: gcpproject.key.json
+      dataset: ingestion
+      denormalized: true
+      flattening_enabled: true
+      flattening_max_depth: 1
+      method: batch_job
+      project: ds6-module-2-olist-analytics
